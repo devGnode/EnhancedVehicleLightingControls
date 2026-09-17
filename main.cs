@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Windows.Forms;
+using System.Collections.Generic;
 
 using GTA;
 using GTA.UI;
+using GTA.Graphics;
 
 namespace EnhancedVehicleLightingControls
 {
@@ -12,6 +14,8 @@ namespace EnhancedVehicleLightingControls
    
         Keys sirenToggleKey, beamToggleKey, interiorLightToggleKey, leftIndicatorKey, rightIndicatorKey, hazardsKey, siren;
         GTA.Control sirenToggleButton, beamToggleButton, interiorLightToggleButton, leftIndicatorButton, rightIndicatorButton, hazardsButton, modifierButton;
+
+        private Dictionary<Keys,Action> kbKeyActions;
 
         public Main()
         {
@@ -23,12 +27,21 @@ namespace EnhancedVehicleLightingControls
 
             #region Keys
             sirenToggleKey          = config.GetValue<Keys>("Emergency Vehicles", "Siren_Toggle_Key", Keys.Tab);
-            siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_Key", Keys.J);
+            siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
             beamToggleKey           = config.GetValue<Keys>("Headlights", "Beam_Toggle_Key", Keys.CapsLock);
             interiorLightToggleKey  = config.GetValue<Keys>("Interior", "Interior_Light_Toggle_Key", Keys.I);
             leftIndicatorKey        = config.GetValue<Keys>("Indicators", "Left_Indicator_key", Keys.Left);
             rightIndicatorKey       = config.GetValue<Keys>("Indicators", "Right_Indicator_Key", Keys.Right);
             hazardsKey              = config.GetValue<Keys>("Indicators", "Hazard_Lights_Key", Keys.Down);
+
+            kbKeyActions = new Dictionary<Keys, Action>{
+              {rightIndicatorKey, ToggleRightIndicator},
+              {leftIndicatorKey,ToggleLeftIndicator},
+              {hazardsKey, ToggleHazards},
+              {interiorLightToggleKey, ToggleInteriorLights},
+              {beamToggleKey, ToggleFullBeams},
+              {sirenToggleKey, ToggleSiren}
+            };
             #endregion
 
             #region Buttons
@@ -50,7 +63,7 @@ namespace EnhancedVehicleLightingControls
                 string modName      = "Enhanced Vehicle Lighting Controls";
                 string version      = "Release v1.0.0";
                 string developer    = "MccDev260";
-                Notification.Show(NotificationIcon.Blocked, modName, developer, $"{version} loaded!!", false, true);
+                Notification.PostMessageText($"{version} loaded !", new TextureAsset("CHAR_YOUTUBE", "CHAR_YOUTUBE"), false, FeedTextIcon.Message, developer, modName);
                 firstTime = false;
             }
 
@@ -61,32 +74,26 @@ namespace EnhancedVehicleLightingControls
         private void OnKeyDown(object sender, KeyEventArgs e)
         {   
             if (GetPlayer().IsInVehicle()){
-                switch(e.KeyCode){
-                    case rightIndicatorKey:         ToggleRightIndicator(); break;
-                    case leftIndicatorKey:          ToggleLeftIndicator(); break;
-                    case hazardsKey:                ToggleHazards(); break;
-                    case interiorLightToggleKey:    ToggleInteriorLights(); break;
-                    case beamToggleKey:             ToggleFullBeams(); break;
-                    case sirenToggleKey:            ToggleSiren(); break;
-                    case siren:                     ActiveSoundOfSiren(true); break;
-                }   
+              
+                /*Toggle*/
+                if(kbKeyActions.TryGetValue(e.KeyCode, out var action)) action();
+                /*Others KbAction*/
+                if(e.KeyCode==siren) ActiveSoundOfSiren(true);
+
             }
         }
-
 
         private void OnKeyUp(object sender, KeyEventArgs e){
 
             if (GetPlayer().IsInVehicle()){
-                switch(e.KeyCode){
-                    case siren: ActiveSoundOfSiren(false); break;
-                } 
+                if(e.KeyCode==siren) ActiveSoundOfSiren(false);
             }
 
         }
         
         private void GamePad()
         {
-            if (Game.IsControlPressed(modifierButton) && GetPlayer().CurrentVehicle != null)
+            if (Game.IsControlPressed(modifierButton) && HasInVehicle())
             {
         
                 // Disable all player controls except for some driving functions.
@@ -113,12 +120,10 @@ namespace EnhancedVehicleLightingControls
 
                 if (Game.IsControlJustPressed(hazardsButton))
                     ToggleHazards();
-            }
-            else if (Game.IsControlJustReleased(modifierButton))
-            {
+
+            }else if (Game.IsControlJustReleased(modifierButton)){
                 Game.EnableAllControlsThisFrame();
-            }
-            else{
+            }else{
                 if(Game.IsControlJustPressed(GTA.Control.ScriptRDown)) ActiveSoundOfSiren(true);
                 else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))ActiveSoundOfSiren(false);
             }
