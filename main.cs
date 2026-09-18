@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows.Forms;
 using System.Collections.Generic;
 
@@ -10,10 +11,23 @@ namespace EnhancedVehicleLightingControls
 {
     public class Main : Script
     {
-        bool firstTime = true;
+        private bool firstTime = true;
    
-        Keys sirenToggleKey, beamToggleKey, interiorLightToggleKey, leftIndicatorKey, rightIndicatorKey, hazardsKey, siren;
-        GTA.Control sirenToggleButton, beamToggleButton, interiorLightToggleButton, leftIndicatorButton, rightIndicatorButton, hazardsButton, modifierButton;
+        Keys sirenToggleKey     = Keys.Tab, 
+        siren                   = Keys.J,
+        beamToggleKey           = Keys.CapsLock,
+        interiorLightToggleKey  = Keys.I,
+        leftIndicatorKey        = Keys.Left,
+        rightIndicatorKey       = Keys.Right,
+        hazardsKey              = Keys.Down;
+
+        GTA.Control sirenToggleButton   = GTA.Control.ScriptPadDown,
+        beamToggleButton                = GTA.Control.ScriptRLeft,
+        interiorLightToggleButton       = GTA.Control.ScriptRUp,
+        leftIndicatorButton             = GTA.Control.ScriptPadLeft,
+        rightIndicatorButton            = GTA.Control.ScriptPadRight,
+        hazardsButton                   = GTA.Control.ScriptPadUp, 
+        modifierButton                  = GTA.Control.ScriptLB;
 
         private Dictionary<Keys,Action> kbKeyActions;
 
@@ -32,9 +46,9 @@ namespace EnhancedVehicleLightingControls
         private long indicatorSecondEllapsedTime = 5;
         private long currentTimeStamp = -1;
 
-        private const int RESET_DIRECTION   = 0x00;
-        private const int RIGHT_DIRECTION   = 0x01;
-        private const int LEFT_DIRECTION    = 0x02;
+        private static readonly int RESET_DIRECTION   = 0x00;
+        private static readonly int RIGHT_DIRECTION   = 0x01;
+        private static readonly int LEFT_DIRECTION    = 0x02;
         /***/
 
         public Main()
@@ -43,16 +57,35 @@ namespace EnhancedVehicleLightingControls
             this.KeyDown    += OnKeyDown;
             this.KeyUp      += OnKeyUp;
 
-            ScriptSettings config = ScriptSettings.Load("scripts\\EVLC_Settings.ini");
+            #region Controls
+            try{
+                if(File.Exists("scripts\\EVLC_Settings.ini")){
 
-            #region Keys
-            sirenToggleKey          = config.GetValue<Keys>("Emergency Vehicles", "Siren_Toggle_Key", Keys.Tab);
-            siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
-            beamToggleKey           = config.GetValue<Keys>("Headlights", "Beam_Toggle_Key", Keys.CapsLock);
-            interiorLightToggleKey  = config.GetValue<Keys>("Interior", "Interior_Light_Toggle_Key", Keys.I);
-            leftIndicatorKey        = config.GetValue<Keys>("Indicators", "Left_Indicator_key", Keys.Left);
-            rightIndicatorKey       = config.GetValue<Keys>("Indicators", "Right_Indicator_Key", Keys.Right);
-            hazardsKey              = config.GetValue<Keys>("Indicators", "Hazard_Lights_Key", Keys.Down);
+                    ScriptSettings config = ScriptSettings.Load("scripts\\EVLC_Settings.ini");
+
+                    #region Keys
+                    sirenToggleKey          = config.GetValue<Keys>("Emergency Vehicles", "Siren_Toggle_Key", Keys.Tab);
+                    siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
+                    beamToggleKey           = config.GetValue<Keys>("Headlights", "Beam_Toggle_Key", Keys.CapsLock);
+                    interiorLightToggleKey  = config.GetValue<Keys>("Interior", "Interior_Light_Toggle_Key", Keys.I);
+                    leftIndicatorKey        = config.GetValue<Keys>("Indicators", "Left_Indicator_key", Keys.Left);
+                    rightIndicatorKey       = config.GetValue<Keys>("Indicators", "Right_Indicator_Key", Keys.Right);
+                    hazardsKey              = config.GetValue<Keys>("Indicators", "Hazard_Lights_Key", Keys.Down);
+                    #endregion
+
+                    #region Buttons
+                    sirenToggleButton           = config.GetValue<GTA.Control>("Emergency Vehicles", "Siren_Toggle_Button", GTA.Control.ScriptPadDown);
+                    beamToggleButton            = config.GetValue<GTA.Control>("Headlights", "Beam_Toggle_Button", GTA.Control.ScriptRLeft);
+                    leftIndicatorButton         = config.GetValue<GTA.Control>("Indicators", "Left_Indicator_Button", GTA.Control.ScriptPadLeft);
+                    rightIndicatorButton        = config.GetValue<GTA.Control>("Indicators", "Right_Indicator_Button", GTA.Control.ScriptPadRight);
+                    hazardsButton               = config.GetValue<GTA.Control>("Indicators", "Hazard_Lights_Button", GTA.Control.ScriptPadUp);
+                    modifierButton              = config.GetValue<GTA.Control>("Mod Settings", "Modifier_Button", GTA.Control.ScriptLB);
+                    interiorLightToggleButton   = config.GetValue<GTA.Control>("Interior", "Interior_Light_Toggle_Button", GTA.Control.ScriptRUp);
+                    #endregion
+                }
+            }catch{
+                File.WriteAllText("scripts\\EVLC.log","Configuration via 'EVLC_Settings.ini' failed !");
+            }
 
             kbKeyActions = new Dictionary<Keys, Action>{
               {rightIndicatorKey, ToggleRightIndicator},
@@ -62,16 +95,6 @@ namespace EnhancedVehicleLightingControls
               {beamToggleKey, ToggleFullBeams},
               {sirenToggleKey, ToggleSiren}
             };
-            #endregion
-
-            #region Buttons
-            sirenToggleButton           = config.GetValue<GTA.Control>("Emergency Vehicles", "Siren_Toggle_Button", GTA.Control.ScriptPadDown);
-            beamToggleButton            = config.GetValue<GTA.Control>("Headlights", "Beam_Toggle_Button", GTA.Control.ScriptRLeft);
-            leftIndicatorButton         = config.GetValue<GTA.Control>("Indicators", "Left_Indicator_Button", GTA.Control.ScriptPadLeft);
-            rightIndicatorButton        = config.GetValue<GTA.Control>("Indicators", "Right_Indicator_Button", GTA.Control.ScriptPadRight);
-            hazardsButton               = config.GetValue<GTA.Control>("Indicators", "Hazard_Lights_Button", GTA.Control.ScriptPadUp);
-            modifierButton              = config.GetValue<GTA.Control>("Mod Settings", "Modifier_Button", GTA.Control.ScriptLB);
-            interiorLightToggleButton   = config.GetValue<GTA.Control>("Interior", "Interior_Light_Toggle_Button", GTA.Control.ScriptRUp);
             #endregion
         }
 
@@ -393,7 +416,7 @@ namespace EnhancedVehicleLightingControls
         */
         private bool QuickIndicator(int direction, bool state){
 
-            if(!HasInVehicle()||HasHazards()) return;
+            if(!HasInVehicle()||HasHazards()) return false;
             if (IsQuickIndicator()&&state || direction == RESET_DIRECTION) SetIndicators(false,false);
 
             if (direction == RIGHT_DIRECTION) SetIndicators(false,state);
