@@ -32,7 +32,7 @@ namespace EnhancedVehicleLightingControls
         private long indicatorSecondEllapsedTime = 5;
         private long currentTimeStamp = -1;
 
-        private const int ANY_DIRECTION     = 0x00;
+        private const int RESET_DIRECTION   = 0x00;
         private const int RIGHT_DIRECTION   = 0x01;
         private const int LEFT_DIRECTION    = 0x02;
         /***/
@@ -137,9 +137,9 @@ namespace EnhancedVehicleLightingControls
 
         private void QuickIndicatorManagment(){
 
-            if(!HasInVehicle()||!HasIndicatorOn()||currentTimeStamp<0) return;
+            if(!HasInVehicle()||!HasIndicatorOn()||!IsQuickIndicator()) return;
             if(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - currentTimeStamp >= indicatorSecondEllapsedTime ){
-                QuickIndicator( HasRightIndicatorOn()? RIGHT_DIRECTION : LEFT_DIRECTION,false);
+                QuickIndicator( HasRightIndicatorOn()? RIGHT_DIRECTION : LEFT_DIRECTION, false);
             }    
 
         }
@@ -157,7 +157,7 @@ namespace EnhancedVehicleLightingControls
                 if(e.KeyCode==siren) ActiveSoundOfSiren(true);
 
                 if(e.KeyCode==Keys.NumPad6) QuickIndicator(RIGHT_DIRECTION,true);
-                if(e.KeyCode==Keys.NumPad5) QuickIndicator(ANY_DIRECTION,false);
+                if(e.KeyCode==Keys.NumPad5) QuickIndicator(RESET_DIRECTION,false);
                 if(e.KeyCode==Keys.NumPad4) QuickIndicator(LEFT_DIRECTION,true);
 
             }
@@ -213,11 +213,28 @@ namespace EnhancedVehicleLightingControls
         }
         #endregion
 
+        /***
+        * <pre>
+        *   Allows you to activate or deactivate the siren.
+        * </pre>
+        * @name     ToggleSiren
+        * @return   void
+        */
         private void ToggleSiren(){
             if(!HasInVehicle()) return;
             ActiveSoundOfSiren(GetVehicle().IsSirenSilent);
         }
 
+        /***
+        * <pre>
+        *   Enables or disables the siren; this function takes a
+        *   boolean parameter that defines whether the sound is 
+        *   activated or not.
+        * </pre>
+        * @name     ActiveSoundOfSiren
+        * @params   bool sirenState
+        * @return   void
+        */
         private void ActiveSoundOfSiren(bool sirenState){
             if(!HasInVehicle()) return;
             if(GetVehicle().HasSiren){
@@ -236,11 +253,25 @@ namespace EnhancedVehicleLightingControls
             ActiveSoundOfSiren(state);
         }
         
+        /***
+        * <pre>
+        *   Allows Toggle Full Beams.
+        * </pre>
+        * @name     ToggleFullBeams
+        * @return   void
+        */
         private void ToggleFullBeams(){
             if(!HasInVehicle()) return;
             if (GetVehicle().AreLightsOn)GetVehicle().AreHighBeamsOn = !GetVehicle().AreHighBeamsOn;
         }
 
+        /***
+        * <pre>
+        *   Allows Toggle interior lights.
+        * </pre>
+        * @name     ToggleInteriorLights
+        * @return   void
+        */
         private void ToggleInteriorLights(){
             if(!HasInVehicle()) return;
             GetVehicle().IsInteriorLightOn = !GetVehicle().IsInteriorLightOn;
@@ -248,30 +279,89 @@ namespace EnhancedVehicleLightingControls
 
         #region Indicators
 
+        /***
+        * <pre>
+        *   Indicates the status of the flashing lights.
+        * </pre>
+        * @name     HasHazards
+        * @return   boolean
+        */
         private bool HasHazards(){return HasLeftIndicatorOn() && HasRightIndicatorOn();}
 
+        /***
+        * <pre>
+        *   Indicates that one of the two flashing lights is on.
+        * </pre>
+        * @name     HasIndicatorOn
+        * @return   boolean
+        */
         private bool HasIndicatorOn(){ return HasRightIndicatorOn()||HasLeftIndicatorOn(); }
 
+        /***
+        * <pre>
+        *   Indicates that one of the two flashing lights is on.
+        * </pre>
+        * @name     HasLeftIndicatorOn
+        * @return   boolean
+        */
         private bool HasLeftIndicatorOn(){return GetVehicle().IsLeftIndicatorLightOn;}
 
+        /***
+        * <pre>
+        *   Indicates whether the right turn signal is on.
+        * </pre>
+        * @name     HasRightIndicatorOn
+        * @return   boolean
+        */
         private bool HasRightIndicatorOn(){return GetVehicle().IsRightIndicatorLightOn;}
 
-
+        /***
+        * <pre>
+        *   Turns the hazard lights on or off.
+        * </pre>
+        * @name     ToggleHazards
+        * @return   void
+        */
         private void ToggleHazards(){
             bool state = !HasHazards();
             SetIndicators(state, state);
         }
 
+        /***
+        * <pre>
+        *   Activates or deactivates the right turn signal.
+        * </pre>
+        * @name     ToggleRightIndicator
+        * @return   void
+        */
         private void ToggleRightIndicator(){
             if (HasHazards()) return;
             SetIndicators(false, !HasRightIndicatorOn());
         }
 
+        /***
+        * <pre>
+        *   Activates or deactivates the left turn signal.
+        * </pre>
+        * @name     ToggleLeftIndicator
+        * @return   void
+        */
         private void ToggleLeftIndicator(){
             if (HasHazards()) return;
             SetIndicators(!HasLeftIndicatorOn(), false);
         }
 
+        /***
+        * <pre>
+        *   This method allows you to define the state of the
+        *   flashing lights; it takes two boolean parameters.
+        *   When either parameter is true, the light is in the 
+        *   "on" state.
+        * </pre>
+        * @name     SetIndicators
+        * @params   boolean leftIndicator, boolean rightIndicator
+        * @return   void
+        */
         private void SetIndicators(bool leftIndicator = false, bool rightIndicator = false){
             if(!HasInVehicle()) return;
             Vehicle vehicle = GetVehicle();
@@ -279,16 +369,40 @@ namespace EnhancedVehicleLightingControls
             vehicle.IsRightIndicatorLightOn = rightIndicator;
         }
 
+        /***
+        * <pre>
+        *   Check if the flashing lights are in a temporary state.
+        * </pre>
+        * @name     IsQuickIndicator
+        * @return   boolean
+        */
         private bool IsQuickIndicator(){ return currentTimeStamp>0; }
 
-        private void QuickIndicator(int direction, bool state){
+        /***
+        * <pre>
+        *   Allows you to temporarily activate the flashing lights.
+        *   The direction parameter takes three different states:
+        *
+        *   - RIGHT_DIRECTION
+        *   - LEFT_DIRECTION
+        *   - RESET_DIRECTION
+        * </pre>
+        * @name     QuickIndicator
+        * @params   int direction, boolean state
+        * @return   boolean
+        */
+        private bool QuickIndicator(int direction, bool state){
 
             if(!HasInVehicle()||HasHazards()) return;
-            if (IsQuickIndicator()&&state || direction == ANY_DIRECTION) SetIndicators(false,false);
+            if (IsQuickIndicator()&&state || direction == RESET_DIRECTION) SetIndicators(false,false);
 
             if (direction == RIGHT_DIRECTION) SetIndicators(false,state);
             if (direction == LEFT_DIRECTION) SetIndicators(state,false);
+            if (direction == RESET_DIRECTION ) state = false;
+
             currentTimeStamp = state ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : -1;
+
+            return IsQuickIndicator();
         }
 
 
