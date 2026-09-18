@@ -10,7 +10,6 @@ namespace EnhancedVehicleLightingControls
     {
         bool firstTime = true;
 
-        Ped playerCharacter = Game.Player.Character;
         bool isSirenSilent;
         bool leftIndicator, rightIndicator;
         bool hazards;
@@ -64,7 +63,7 @@ namespace EnhancedVehicleLightingControls
         #region Input
         private void OnKeyDown(object sender, KeyEventArgs e)
         {   
-            if (playerCharacter.CurrentVehicle != null)
+            if (GetPlayer().CurrentVehicle != null)
             {
                 if (e.KeyCode == sirenToggleKey)
                     ToggleSiren();
@@ -88,7 +87,7 @@ namespace EnhancedVehicleLightingControls
 
         private void GamePad()
         {
-            if (Game.IsControlPressed(modifierButton) && playerCharacter.CurrentVehicle != null)
+            if (Game.IsControlPressed(modifierButton) && GetPlayer().CurrentVehicle != null)
             {
                 // Disable all player controls except for some driving functions.
                 Game.DisableAllControlsThisFrame();
@@ -124,24 +123,24 @@ namespace EnhancedVehicleLightingControls
 
         private void ToggleSiren()
         {
-            if (playerCharacter.CurrentVehicle.HasSiren)
+            if (GetPlayer().CurrentVehicle.HasSiren)
             {
                 isSirenSilent = !isSirenSilent;
-                playerCharacter.CurrentVehicle.IsSirenSilent = isSirenSilent;
+                GetPlayer().CurrentVehicle.IsSirenSilent = isSirenSilent;
             }
         }
 
         private void ToggleFullBeams()
         {
-            if (playerCharacter.CurrentVehicle.AreLightsOn)
+            if (GetPlayer().CurrentVehicle.AreLightsOn)
             {
-                playerCharacter.CurrentVehicle.AreHighBeamsOn = !playerCharacter.CurrentVehicle.AreHighBeamsOn;
+                GetPlayer().CurrentVehicle.AreHighBeamsOn = !GetPlayer().CurrentVehicle.AreHighBeamsOn;
             }
         }
 
         private void ToggleInteriorLights()
         {
-            playerCharacter.CurrentVehicle.IsInteriorLightOn = !playerCharacter.CurrentVehicle.IsInteriorLightOn;
+            GetPlayer().CurrentVehicle.IsInteriorLightOn = !GetPlayer().CurrentVehicle.IsInteriorLightOn;
         }
 
         #region Indicators
@@ -169,10 +168,18 @@ namespace EnhancedVehicleLightingControls
             SetIndicators(leftIndicator);
         }
 
+        private Ped GetPlayer(){
+
+            Ped currentPalyer = Game.Player.Character;
+            if(currentPalyer!=null && currentPalyer.Exists()) return currentPalyer; 
+
+            return null;
+        }
+
         private void SetIndicators(bool leftIndicator = false, bool rightIndicator = false)
         {
-            playerCharacter.CurrentVehicle.IsLeftIndicatorLightOn = leftIndicator;
-            playerCharacter.CurrentVehicle.IsRightIndicatorLightOn = rightIndicator;
+            GetPlayer().CurrentVehicle.IsLeftIndicatorLightOn = leftIndicator;
+            GetPlayer().CurrentVehicle.IsRightIndicatorLightOn = rightIndicator;
         }
         #endregion
     }
