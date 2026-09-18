@@ -53,5 +53,9 @@
     <None Include="docs\README.md" />
     <None Include="EVLC_Settings.ini" />
   </ItemGroup>
+
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Import Project="$(MSBuildProjectDirectory)\Local.Build.props"
+    Condition="Exists('$(MSBuildProjectDirectory)\Local.Build.props')" />
 </Project>

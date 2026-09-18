@@ -68,3 +68,33 @@ To report a bug, open a new issue with the 'bug' label.
 
 If you have an idea for a feature you would like to see in a future release, open a new issue with the 'enhancement' label.
 
+### How to auto copy the .dll to your scripts folder
+Working on this project and sick of dragging and dropping the output .dll into your scripts folder for testing?
+
+Find `Local.Build.props.example` file in the repos root.
+
+1. Duplicate the file.
+
+2. Delete `.example` extension so it becomes `Local.Build.props`
+
+3. Open the file and find this property:
+```
+<PostBuildEvent>
+      copy /Y "$(TargetPath)" "Path\To\GTAV\Scripts\Folder"
+</PostBuildEvent>
+```
+
+4. Replace the `Path\To\GTAV\Scripts\Folder` placeholder with the path to your scripts folder in your GTAV directory. It should look like the following example:
+```
+<PostBuildEvent>
+      copy /Y "$(TargetPath)" "C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V\scripts"
+</PostBuildEvent>
+```
+
+Now each time the project is built in visual studio, it will auto copy the .dll to that directory.
+
+**Notes and Warnings**
+
+* The example `Local.Build.props.example` file should not be edited directly as Visual Studio does not know it exists, so therefore won't work.
+* Your `Local.Build.props` file should **not** be included in commits and should stay local to your machine.
+* Remember to reload ScriptHookDotNet from the in-game console with the `Reload()` command after each build.
