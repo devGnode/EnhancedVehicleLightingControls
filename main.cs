@@ -17,6 +17,26 @@ namespace EnhancedVehicleLightingControls
 
         private Dictionary<Keys,Action> kbKeyActions;
 
+        /***
+            IndicatorsManagment
+        */
+        private bool hasTurnedRight = false;
+        private bool hasTurnedLeft = false;
+        private const float TurnThreshold = 15.0f;
+        private const float ResetThreshold = 5.0f;
+        /***/
+
+        /***
+            QuickIndicatorManagment
+        */
+        private long indicatorSecondEllapsedTime = 5;
+        private long currentTimeStamp = -1;
+
+        private const int ANY_DIRECTION     = 0x00;
+        private const int RIGHT_DIRECTION   = 0x01;
+        private const int LEFT_DIRECTION    = 0x02;
+        /***/
+
         public Main()
         {
             this.Tick       += OnTick;
@@ -58,8 +78,10 @@ namespace EnhancedVehicleLightingControls
         private void OnTick(object sender, EventArgs e)
         {
 
-            if (firstTime)
-            {
+            if(ObjectIsNull(GetPlayer())) return;
+
+            if (firstTime){
+
                 string modName      = "Enhanced Vehicle Lighting Controls";
                 string version      = "Release v1.0.0";
                 string developer    = "MccDev260";
@@ -68,7 +90,61 @@ namespace EnhancedVehicleLightingControls
             }
 
             if (Game.LastInputMethod == InputMethod.GamePad)GamePad();
+
+            /**PROC*/
+            IndicatorsManagment();
+            QuickIndicatorManagment();
         }
+
+
+        private void OnAborted(object sender, EventArgs e){
+            this.Tick       -= OnTick;
+            this.KeyDown    -= OnKeyDown;
+            this.KeyUp      -= OnKeyUp;
+        }
+
+        #region Proc
+        private void IndicatorsManagment(){
+
+            if(!HasInVehicle()||!HasIndicatorOn()||IsQuickIndicator()) return;
+    
+                
+            if(HasRightIndicatorOn()){
+
+                    if(GetVehicle().SteeringAngle < -TurnThreshold ) hasTurnedRight = true;
+                    else if(hasTurnedRight && Math.Abs(GetVehicle().SteeringAngle) < ResetThreshold){
+                        ToggleRightIndicator();
+                        hasTurnedRight = false;
+                    }
+
+            }else{
+                hasTurnedRight = false;
+            }
+            if(HasLeftIndicatorOn()){
+
+                if(GetVehicle().SteeringAngle > TurnThreshold ) hasTurnedLeft = true;
+                else if(hasTurnedLeft && Math.Abs(GetVehicle().SteeringAngle) < ResetThreshold){
+                    ToggleLeftIndicator();
+                    hasTurnedLeft = false;
+                }
+
+            }else{
+                hasTurnedLeft = false;
+            }
+
+
+        }
+
+        private void QuickIndicatorManagment(){
+
+            if(!HasInVehicle()||!HasIndicatorOn()||currentTimeStamp<0) return;
+            if(DateTimeOffset.UtcNow.ToUnixTimeSeconds() - currentTimeStamp >= indicatorSecondEllapsedTime ){
+                QuickIndicator( HasRightIndicatorOn()? RIGHT_DIRECTION : LEFT_DIRECTION,false);
+            }    
+
+        }
+
+        #endregion
 
         #region Input
         private void OnKeyDown(object sender, KeyEventArgs e)
@@ -79,6 +155,10 @@ namespace EnhancedVehicleLightingControls
                 if(kbKeyActions.TryGetValue(e.KeyCode, out var action)) action();
                 /*Others KbAction*/
                 if(e.KeyCode==siren) ActiveSoundOfSiren(true);
+
+                if(e.KeyCode==Keys.NumPad6) QuickIndicator(RIGHT_DIRECTION,true);
+                if(e.KeyCode==Keys.NumPad5) QuickIndicator(ANY_DIRECTION,false);
+                if(e.KeyCode==Keys.NumPad4) QuickIndicator(LEFT_DIRECTION,true);
 
             }
         }
@@ -126,6 +206,9 @@ namespace EnhancedVehicleLightingControls
             }else{
                 if(Game.IsControlJustPressed(GTA.Control.ScriptRDown)) ActiveSoundOfSiren(true);
                 else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))ActiveSoundOfSiren(false);
+
+                if(Game.IsControlJustPressed(GTA.Control.VehicleBrake)) BreakLights(true);
+                else if(Game.IsControlJustReleased(GTA.Control.VehicleBrake)) BreakLights(false);
             }
         }
         #endregion
@@ -150,6 +233,7 @@ namespace EnhancedVehicleLightingControls
                 if(!HasHazards()) ToggleHazards();
                 GetVehicle().IsSirenActive = true;
             }
+            ActiveSoundOfSiren(state);
         }
         
         private void ToggleFullBeams(){
@@ -165,6 +249,8 @@ namespace EnhancedVehicleLightingControls
         #region Indicators
 
         private bool HasHazards(){return HasLeftIndicatorOn() && HasRightIndicatorOn();}
+
+        private bool HasIndicatorOn(){ return HasRightIndicatorOn()||HasLeftIndicatorOn(); }
 
         private bool HasLeftIndicatorOn(){return GetVehicle().IsLeftIndicatorLightOn;}
 
@@ -191,6 +277,24 @@ namespace EnhancedVehicleLightingControls
             Vehicle vehicle = GetVehicle();
             vehicle.IsLeftIndicatorLightOn  = leftIndicator;
             vehicle.IsRightIndicatorLightOn = rightIndicator;
+        }
+
+        private bool IsQuickIndicator(){ return currentTimeStamp>0; }
+
+        private void QuickIndicator(int direction, bool state){
+
+            if(!HasInVehicle()||HasHazards()) return;
+            if (IsQuickIndicator()&&state || direction == ANY_DIRECTION) SetIndicators(false,false);
+
+            if (direction == RIGHT_DIRECTION) SetIndicators(false,state);
+            if (direction == LEFT_DIRECTION) SetIndicators(state,false);
+            currentTimeStamp = state ? DateTimeOffset.UtcNow.ToUnixTimeSeconds() : -1;
+        }
+
+
+        private void BreakLights(bool state){
+            if(!HasInVehicle()||GetVehicle().IsSirenActive) return;
+            GetVehicle().AreBrakeLightsOn = state;
         }
         #endregion
 
