@@ -13,7 +13,7 @@ namespace EnhancedVehicleLightingControls
     {
    
         Keys sirenToggleKey     = Keys.Tab, 
-        siren                   = Keys.J,
+        holdSiren                   = Keys.J,
         beamToggleKey           = Keys.CapsLock,
         interiorLightToggleKey  = Keys.I,
         leftIndicatorKey        = Keys.Left,
@@ -64,7 +64,7 @@ namespace EnhancedVehicleLightingControls
 
                     #region Keys
                     sirenToggleKey          = config.GetValue<Keys>("Emergency Vehicles", "Siren_Toggle_Key", Keys.Tab);
-                    siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
+                    holdSiren               = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
                     beamToggleKey           = config.GetValue<Keys>("Headlights", "Beam_Toggle_Key", Keys.CapsLock);
                     interiorLightToggleKey  = config.GetValue<Keys>("Interior", "Interior_Light_Toggle_Key", Keys.I);
                     leftIndicatorKey        = config.GetValue<Keys>("Indicators", "Left_Indicator_key", Keys.Left);
@@ -179,7 +179,7 @@ namespace EnhancedVehicleLightingControls
                 /*Toggle*/
                 if(kbKeyActions.TryGetValue(e.KeyCode, out var action)) action();
                 /*Others KbAction*/
-                if(e.KeyCode==siren) HoldSiren(true);
+                if(e.KeyCode==holdSiren) HoldSiren(true);
                 /**Hooks emergency GTA key*/
                 if(e.KeyCode==Keys.E&&GetVehicle().HasSiren) HazardsState(!GetVehicle().IsSirenActive);
 
@@ -193,7 +193,7 @@ namespace EnhancedVehicleLightingControls
         private void OnKeyUp(object sender, KeyEventArgs e){
 
             if (GetPlayer().IsInVehicle()){
-                if(e.KeyCode==siren) HoldSiren(false);
+                if(e.KeyCode==holdSiren) HoldSiren(false);
             }
 
         }
