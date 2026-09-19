@@ -234,8 +234,12 @@ namespace EnhancedVehicleLightingControls
                 /**Hooks emergency GTA game controller*/
                 if(Game.IsControlJustPressed(GTA.Control.VehicleHorn)&&GetVehicle().HasSiren) HazardsState(!GetVehicle().IsSirenActive);
 
-                if(Game.IsControlJustPressed(GTA.Control.ScriptRDown)) ActiveSoundOfSiren(true);
-                else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))ActiveSoundOfSiren(false);
+                if (Game.IsControlPressed(GTA.Control.ScriptRDown)){
+                    Game.DisableControlThisFrame(GTA.Control.VehicleDuck);
+                }
+
+                if(Game.IsControlJustPressed(GTA.Control.ScriptRDown))HoldSiren(true);
+                else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))HoldSiren(false);
 
                 if(Game.IsControlJustPressed(GTA.Control.VehicleBrake)) BreakLights(true);
                 else if(Game.IsControlJustReleased(GTA.Control.VehicleBrake)) BreakLights(false);
