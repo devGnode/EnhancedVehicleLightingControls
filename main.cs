@@ -13,7 +13,7 @@ namespace EnhancedVehicleLightingControls
     {
    
         Keys sirenToggleKey     = Keys.Tab, 
-        siren                   = Keys.J,
+        holdSiren                   = Keys.J,
         beamToggleKey           = Keys.CapsLock,
         interiorLightToggleKey  = Keys.I,
         leftIndicatorKey        = Keys.Left,
@@ -64,7 +64,7 @@ namespace EnhancedVehicleLightingControls
 
                     #region Keys
                     sirenToggleKey          = config.GetValue<Keys>("Emergency Vehicles", "Siren_Toggle_Key", Keys.Tab);
-                    siren                   = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
+                    holdSiren               = config.GetValue<Keys>("Emergency Vehicles", "Siren_hold_Key", Keys.J);
                     beamToggleKey           = config.GetValue<Keys>("Headlights", "Beam_Toggle_Key", Keys.CapsLock);
                     interiorLightToggleKey  = config.GetValue<Keys>("Interior", "Interior_Light_Toggle_Key", Keys.I);
                     leftIndicatorKey        = config.GetValue<Keys>("Indicators", "Left_Indicator_key", Keys.Left);
@@ -179,7 +179,9 @@ namespace EnhancedVehicleLightingControls
                 /*Toggle*/
                 if(kbKeyActions.TryGetValue(e.KeyCode, out var action)) action();
                 /*Others KbAction*/
-                if(e.KeyCode==siren) ActiveSoundOfSiren(true);
+                if(e.KeyCode==holdSiren) HoldSiren(true);
+                /**Hooks emergency GTA key*/
+                if(e.KeyCode==Keys.E&&GetVehicle().HasSiren) HazardsState(!GetVehicle().IsSirenActive);
 
                 if(e.KeyCode==Keys.NumPad6) QuickIndicator(RIGHT_DIRECTION,true);
                 if(e.KeyCode==Keys.NumPad5) QuickIndicator(RESET_DIRECTION,false);
@@ -191,7 +193,7 @@ namespace EnhancedVehicleLightingControls
         private void OnKeyUp(object sender, KeyEventArgs e){
 
             if (GetPlayer().IsInVehicle()){
-                if(e.KeyCode==siren) ActiveSoundOfSiren(false);
+                if(e.KeyCode==holdSiren) HoldSiren(false);
             }
 
         }
@@ -229,8 +231,15 @@ namespace EnhancedVehicleLightingControls
             }else if (Game.IsControlJustReleased(modifierButton)){
                 Game.EnableAllControlsThisFrame();
             }else{
-                if(Game.IsControlJustPressed(GTA.Control.ScriptRDown)) ActiveSoundOfSiren(true);
-                else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))ActiveSoundOfSiren(false);
+                /**Hooks emergency GTA game controller*/
+                if(Game.IsControlJustPressed(GTA.Control.VehicleHorn)&&GetVehicle().HasSiren) HazardsState(!GetVehicle().IsSirenActive);
+
+                if (Game.IsControlPressed(GTA.Control.ScriptRDown)){
+                    Game.DisableControlThisFrame(GTA.Control.VehicleDuck);
+                }
+
+                if(Game.IsControlJustPressed(GTA.Control.ScriptRDown))HoldSiren(true);
+                else if(Game.IsControlJustReleased(GTA.Control.ScriptRDown))HoldSiren(false);
 
                 if(Game.IsControlJustPressed(GTA.Control.VehicleBrake)) BreakLights(true);
                 else if(Game.IsControlJustReleased(GTA.Control.VehicleBrake)) BreakLights(false);
@@ -269,11 +278,19 @@ namespace EnhancedVehicleLightingControls
             }
         }
 
+        /***
+        * <pre>
+        *   Allows hold siren with boolean param.
+        * </pre>
+        * @name     HoldSiren
+        * @params   boolean state
+        * @return   void
+        */
         public void HoldSiren(bool state){
             if(!HasInVehicle()) return;
             if(!GetVehicle().IsSirenActive&&state){
-                if(!HasHazards()) ToggleHazards();
-                GetVehicle().IsSirenActive = true;
+                GetVehicle().IsSirenActive = state;
+                HazardsState(true);
             }
             ActiveSoundOfSiren(state);
         }
@@ -347,10 +364,17 @@ namespace EnhancedVehicleLightingControls
         * @name     ToggleHazards
         * @return   void
         */
-        private void ToggleHazards(){
-            bool state = !HasHazards();
-            SetIndicators(state, state);
-        }
+        private void ToggleHazards(){HazardsState(!HasHazards());}
+
+        /***
+        * <pre>
+        *   Turns the hazard lights on or off with boolean param.
+        * </pre>
+        * @name     ToggleHazards
+        * @params   boolean state
+        * @return   void
+        */
+        private void HazardsState(bool state){SetIndicators(state, state);}
 
         /***
         * <pre>
