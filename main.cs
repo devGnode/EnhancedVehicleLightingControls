@@ -11,7 +11,6 @@ namespace EnhancedVehicleLightingControls
 {
     public class Main : Script
     {
-        private bool firstTime = true;
    
         Keys sirenToggleKey     = Keys.Tab, 
         siren                   = Keys.J,
@@ -53,7 +52,7 @@ namespace EnhancedVehicleLightingControls
 
         public Main()
         {
-            this.Tick       += OnTick;
+            this.Tick       += OnInit;
             this.KeyDown    += OnKeyDown;
             this.KeyUp      += OnKeyUp;
 
@@ -98,19 +97,22 @@ namespace EnhancedVehicleLightingControls
             #endregion
         }
 
-        private void OnTick(object sender, EventArgs e)
-        {
+        private void OnInit(object sender, EventArgs e){
 
             if(ObjectIsNull(GetPlayer())) return;
 
-            if (firstTime){
+            Wait(2000);
 
-                string modName      = "Enhanced Vehicle Lighting Controls";
-                string version      = "Release v1.0.0";
-                string developer    = "MccDev260";
-                Notification.PostMessageText($"{version} loaded !", new TextureAsset("CHAR_YOUTUBE", "CHAR_YOUTUBE"), false, FeedTextIcon.Message, developer, modName);
-                firstTime = false;
-            }
+            string modName      = "Enhanced Vehicle Lighting Controls";
+            string version      = "Release v1.0.0";
+            string developer    = "MccDev260";
+            Notification.PostMessageText($"{version} loaded !", new TextureAsset("CHAR_YOUTUBE", "CHAR_YOUTUBE"), false, FeedTextIcon.Message, developer, modName);
+
+            this.Tick -= OnInit;
+            this.Tick += OnTick;
+        }
+
+        private void OnTick(object sender, EventArgs e){
 
             if (Game.LastInputMethod == InputMethod.GamePad)GamePad();
 
